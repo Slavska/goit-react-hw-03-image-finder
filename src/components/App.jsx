@@ -7,7 +7,6 @@ import { Searchbar } from './Searchbar/Searchbar';
 import { Loader } from './Loader/Loader';
 import { toast } from 'react-toastify';
 
-let page = 1;
 export class App extends Component {
   constructor() {
     super();
@@ -15,10 +14,19 @@ export class App extends Component {
       status: 'idle',
       items: [],
       totalHits: 0,
+      page: 1,
     };
   }
-  fetchImg = async input => {
-    page = 1;
+  componentDidUpdate(prevProps, prevState) {
+    if (
+      this.state.input !== prevState.input ||
+      this.state.page !== prevState.page
+    ) {
+      this.fetchImg();
+    }
+  }
+  fetchImg = async () => {
+    const { input, page } = this.state;
     if (input.trim() === '') {
       toast.warning('Empty field, try again.');
       return;
@@ -33,12 +41,12 @@ export class App extends Component {
           );
         } else {
           toast.success(`Yes! We find ${input}.`);
-          this.setState({
-            items: hits,
+          this.setState(prevState => ({
+            items: [...prevState.items, ...hits],
             input,
             totalHits: totalHits,
             status: 'resolved',
-          });
+          }));
         }
       } catch (error) {
         toast.error('Problem');
@@ -46,32 +54,25 @@ export class App extends Component {
       }
     }
   };
+  onSubmit = input => {
+    this.setState({ input: input, items: [] });
+  };
   loadMore = async () => {
-    this.setState({ status: 'pending' });
-    try {
-      const { hits } = await fetch(this.state.input, (page += 1));
-      this.setState(prevState => ({
-        items: [...prevState.items, ...hits],
-        status: 'resolved',
-      }));
-    } catch (error) {
-      toast.error('Something went wrong!');
-      this.setState({ status: 'rejected' });
-    }
+    this.setState(prevState => ({ page: prevState.page + 1 }));
   };
   render() {
     const { status, page, items, totalHits } = this.state;
     if (status === 'idle') {
       return (
         <div className={css.App}>
-          <Searchbar onSubmit={this.fetchImg} />
+          <Searchbar onSubmit={this.onSubmit} />
         </div>
       );
     }
     if (status === 'pending') {
       return (
         <div className={css.App}>
-          <Searchbar onSubmit={this.fetchImg} />
+          <Searchbar onSubmit={this.onSubmit} />
           <ImageGallery page={page} items={items} />
           <Loader />
           {totalHits > 12 && <Button onClick={this.loadMore} />}
@@ -81,7 +82,7 @@ export class App extends Component {
     if (status === 'rejected') {
       return (
         <div className={css.App}>
-          <Searchbar onSubmit={this.fetchImg} />
+          <Searchbar onSubmit={this.onSubmit} />
           toast.error('It is problem')
         </div>
       );
@@ -89,7 +90,7 @@ export class App extends Component {
     if (status === 'resolved') {
       return (
         <div className={css.App}>
-          <Searchbar onSubmit={this.fetchImg} />
+          <Searchbar onSubmit={this.onSubmit} />
           <ImageGallery page={page} items={items} />
           {totalHits > 12 && totalHits > items.length && (
             <Button onClick={this.loadMore} />
