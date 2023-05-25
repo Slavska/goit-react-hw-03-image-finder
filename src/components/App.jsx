@@ -27,8 +27,8 @@ export class App extends Component {
   }
   fetchImg = async () => {
     const { input, page } = this.state;
-    if (input.trim() === '') {
-      toast.warning('Empty field, try again.');
+    if (input.trim() === '' || input.trim() === this.setState.input) {
+      toast.warning('You did not change the field, try again.');
       return;
     } else {
       try {
@@ -55,7 +55,8 @@ export class App extends Component {
     }
   };
   onSubmit = input => {
-    this.setState({ input: input, items: [] });
+    this.setState({ status: 'rejected' });
+    this.setState({ input: input, items: [], page: 1 });
   };
   loadMore = async () => {
     this.setState(prevState => ({ page: prevState.page + 1 }));
@@ -75,7 +76,9 @@ export class App extends Component {
           <Searchbar onSubmit={this.onSubmit} />
           <ImageGallery page={page} items={items} />
           <Loader />
-          {totalHits > 12 && <Button onClick={this.loadMore} />}
+          {totalHits > 12 && items.length > 0 && (
+            <Button onClick={this.loadMore} />
+          )}
         </div>
       );
     }
@@ -83,7 +86,6 @@ export class App extends Component {
       return (
         <div className={css.App}>
           <Searchbar onSubmit={this.onSubmit} />
-          toast.error('It is problem')
         </div>
       );
     }
